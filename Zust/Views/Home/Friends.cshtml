@@ -1,0 +1,352 @@
+@using Zust.Web.Helpers.ConstantHelpers
+@using Microsoft.AspNetCore.Identity;
+@using Zust.Entities.Models;
+@{
+    var userManager = Context.RequestServices.GetService<UserManager<User>>();
+    var user = await userManager.GetUserAsync(Context.User);
+    var TakeUserCount = Constants.TakeUserCount;
+    ViewData["Title"] = "Zust - Friends";
+}
+
+<link rel="stylesheet" href="~/assets//css/main.css" />
+
+<style>
+    .user-image {
+        max-width: 100px !important;
+        max-height: 100px !important;
+        width: 100px !important;
+        height: 100px !important;
+        object-fit: cover !important;
+    }
+
+    /*.single-friends-card:hover .send-message-btn {
+                background-color: var(--main-color) !important;
+                color: var(--white-color) !important;
+            }*/
+
+    .send-message-btn:hover {
+        background-color: var(--main-color) !important;
+        color: var(--white-color) !important;
+    }
+
+    .remove-friend-btn {
+    }
+
+        .remove-friend-btn:hover {
+            background-color: var(--red-color) !important;
+            color: var(--white-color) !important;
+        }
+
+            .remove-friend-btn:hover .my-icon {
+                background-color: var(--red-color) !important;
+                color: var(--white-color) !important;
+            }
+
+    .single-friends-card:hover .my-icon {
+        background-color: var(--main-color) !important;
+        color: var(--white-color) !important;
+    }
+
+    .add-friend-btn button,
+    .add-friend-btn {
+        width: 100%;
+    }
+
+    .custom-spinner-color {
+        color: var(--main-color);
+    }
+
+    .tab-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .row {
+        display: flex;
+        justify-content: center;
+    }
+
+    .spinner-border {
+        margin-top: 20px;
+    }
+
+    /*   .friends-content *,
+                .post-body * {
+                    font-weight: bold;
+                }*/
+
+    .transparent-button {
+        background-color: transparent;
+        border: 1px solid transparent;
+    }
+</style>
+
+<div class="page-banner-box bg-4">
+    <h3>Friends</h3>
+</div>
+
+<div class="friends-inner-box-style d-flex justify-content-between align-items-center margin-top-25">
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="following-tab" data-bs-toggle="tab" href="#followings" role="tab" aria-controls="followings">Following</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="followers-tab" data-bs-toggle="tab" href="#followers" role="tab" aria-controls="followers">Followers</a>
+        </li>
+    </ul>
+</div>
+
+<div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="followings" role="tabpanel">
+        <div class="row justify-content-center" id="followings-container">
+        </div>
+
+        <div class="load-more-posts-btn">
+            <button id="loadMoreFollowings" class="transparent-button" onclick="addFollowingsToView()"><i class="flaticon-loading"></i> Load More</button>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="followers" role="tabpanel">
+        <div class="row justify-content-center" id="followers-container">
+        </div>
+
+        <div class="load-more-posts-btn">
+            <button id="loadMoreFollowers" class="transparent-button" onclick="addFollowersToView()"><i class="flaticon-loading"></i> Load More</button>
+        </div>
+    </div>
+</div>
+
+<script src="~/assets/js/jquery.min.js"></script>
+<script src="~/assets/js/functions.js"></script>
+<script>
+    localStorage.setItem('activeMenuItem', '#3');
+    var currentUserId = '@user.Id.ToString()';
+    var takeUserCount = @TakeUserCount;
+    var followerCountInView = 0;
+    var followingCountInView = 0;
+
+    function startSpinner(spinnerId) {
+        var spinner = `
+                                        <div class="spinner-border custom-spinner-color" role="status">
+                                            <span class="sr-only"></span>
+                                        </div>`;
+        $(`#${spinnerId}`).prop('disabled', true);
+        $(`#${spinnerId}`).html(spinner);
+    }
+
+    function stopSpinner(spinnerId) {
+        $(`#${spinnerId}`).prop('disabled', false);
+        $(`#${spinnerId}`).html('<i class="flaticon-loading"></i> Load More');
+    }
+
+    async function addFollowingsToView() {
+        startSpinner("loadMoreFollowings");
+        var container = document.getElementById("followings-container");
+        var followings = await makeAjaxRequest(`/api/User/GetFollowingsInRange?startIndex=${followingCountInView}&takeCount=${takeUserCount}`, "GET");
+        if (followings === null || followings.length === 0) {
+            container.innerHTML = getNoResultHtml("No Users Followed", "You're not following anyone yet. Start following users to see them here.")
+        }
+        else {
+            for (var i = 0; i < followings.length; i++) {
+                var following = followings[i];
+                var id = following.id;
+                var postLikesCountId = id + "-post-likes-count-p1";
+                var followingsCountId = id + "-following-count-p1";
+                var followersCountId = id + "-followers-count-p1";
+                var html = createFollowingHtml(following, postLikesCountId, followingsCountId, followersCountId);
+                container.innerHTML += html;
+            }
+            followingCountInView += followings.length;
+        }
+        await setSocialDataFollowing(followings);
+
+        stopSpinner("loadMoreFollowings");
+    }
+
+    async function addFollowersToView() {
+        startSpinner("loadMoreFollowers");
+        var container = document.getElementById("followers-container");
+        var followers = await makeAjaxRequest(`/api/User/GetFollowersInRange?startIndex=${followerCountInView}&takeCount=${takeUserCount}`, "GET");
+        if (followers === null || followers.length === 0) {
+            container.innerHTML = getNoResultHtml("No Followers Yet", "You have no followers yet. Connect with others to start gaining followers.")
+        }
+        else {
+            for (var i = 0; i < followers.length; i++) {
+                var follower = followers[i];
+                var id = follower.id;
+                var postLikesCountId = id + "-post-likes-count-p2";
+                var followingsCountId = id + "-following-count-p2";
+                var followersCountId = id + "-followers-count-p2";
+                var html = createFollowerHtml(follower, postLikesCountId, followingsCountId, followersCountId);
+                container.innerHTML += html;
+            }
+            followerCountInView += followers.length;
+        }
+        await setSocialDataFollower(followers);
+
+        stopSpinner("loadMoreFollowers");
+    }
+
+    var spinnerHtml = `
+                    <div class="spinner-border text-primary" role="status" style="color:var(--main-color) !important; width:1.1rem; height:1.1rem; ">
+                        <span class="sr-only"></span>
+                    </div>
+                `;
+
+    function createFollowerHtml(user, postLikesCountId, followingsCountId, followersCountId) {
+        var content = `
+                                                <div class="col-lg-3 col-sm-6" id="follower-card-${user.id}">
+                                                    <div class="single-friends-card">
+                                                        <div class="friends-image">
+                                                            <a href="/home/users?id=${user.id}">
+                                                                <img src="${user.coverImage}" alt="${user.coverImage}">
+                                                            </a>
+                                                            <div class="icon">
+                                                                <a href="/home/users?id=${user.id}"><i class="flaticon-user my-icon"></i></a>
+                                                            </div>
+                                                        </div>
+                                                        <div class="friends-content">
+                                                            <div class="friends-info d-flex justify-content-between align-items-center">
+                                                                <a href="/home/users?id=${user.id}">
+                                                                    <img src="${user.imageUrl}" alt="image" class="user-image">
+                                                                </a>
+                                                                <div class="text ms-3">
+                                                                    <h3><a href="/home/users?id=${user.id}">${user.userName}</a></h3>
+                                                                    <span>${user.email}</span>
+                                                                </div>
+                                                            </div>
+                                                            <ul class="statistics">
+                                                                <li>
+                                                                    <a href="#">
+                                                                        <span class="item-number" id=${postLikesCountId}>${spinnerHtml}</span>
+                                                                        <span class="item-text">Likes</span>
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a href="#">
+                                                                            <span class="item-number" id="${followingsCountId}">${spinnerHtml}</span>
+                                                                        <span class="item-text">Following</span>
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a href="#">
+                                                                            <span class="item-number" id="${followersCountId}">${spinnerHtml}</span>
+                                                                        <span class="item-text">Followers</span>
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                            <div class="button-group d-flex justify-content-between align-items-center">
+                                                                <div class="add-friend-btn" style="display: flex; gap:20px;">
+                                                                             <button type="submit" onclick="callRemoveFriend('${user.id}')" class="remove-friend-btn" >Remove Follower</button>
+
+                                                                     <button onClick=redirectToChat('${user.id}') type="submit" class="send-message-btn">Send Message</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>`;
+        return content;
+    }
+
+    function createFollowingHtml(user, postLikesCountId, followingsCountId, followersCountId) {
+        var content = `
+                                                <div class="col-lg-3 col-sm-6">
+                                                    <div class="single-friends-card">
+                                                        <div class="friends-image">
+                                                            <a href="/home/users?id=${user.id}">
+                                                                <img src="${user.coverImage}" alt="${user.coverImage}">
+                                                            </a>
+                                                            <div class="icon">
+                                                                <a href="/home/users?id=${user.id}"><i class="flaticon-user my-icon"></i></a>
+                                                            </div>
+                                                        </div>
+                                                        <div class="friends-content">
+                                                            <div class="friends-info d-flex justify-content-between align-items-center">
+                                                                <a href="/home/users?id=${user.id}">
+                                                                        <img src="${user.imageUrl}" alt="image" class="user-image">
+                                                                </a>
+                                                                <div class="text ms-3">
+                                                                    <h3><a href="/home/users?id=${user.id}">${user.userName}</a></h3>
+                                                                    <span>${truncateText(user.email, 15)}</span>
+                                                                </div>
+                                                            </div>
+                                                            <ul class="statistics">
+                                                                <li>
+                                                                    <a href="#">
+                                                                            <span class="item-number" id='${postLikesCountId}'>${spinnerHtml}</span>
+                                                                        <span class="item-text">Likes</span>
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a href="#">
+                                                                            <span class="item-number" id='${followingsCountId}'>${spinnerHtml}</span>
+                                                                        <span class="item-text">Following</span>
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a href="#">
+                                                                            <span class="item-number" id="${followersCountId}">${spinnerHtml}</span>
+                                                                        <span class="item-text">Followers</span>
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                            <div class="button-group d-flex justify-content-between align-items-center">
+                                                                <div class="add-friend-btn">
+                                                                         <button onClick=redirectToChat('${user.id}') type="submit" class="send-message-btn">Send Message</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>`;
+        return content;
+    }
+
+    function redirectToChat(userId) {
+        location.href = '/home/chats?userId=' + userId;
+    }
+
+    async function setSocialDataFollower(newUsers) {
+        await Promise.all(
+            newUsers.map(async (user) => {
+                var postLikesCountId = user.id + "-post-likes-count-p2";
+                var followingsCountId = user.id + "-following-count-p2";
+                var followersCountId = user.id + "-followers-count-p2";
+                await setSocialCounts(followersCountId, followingsCountId, postLikesCountId, user.id);
+            })
+        );
+    }
+
+    async function setSocialDataFollowing(newUsers) {
+        await Promise.all(
+            newUsers.map(async (user) => {
+                var postLikesCountId = user.id + "-post-likes-count-p1";
+                var followingsCountId = user.id + "-following-count-p1";
+                var followersCountId = user.id + "-followers-count-p1";
+                await setSocialCounts(followersCountId, followingsCountId, postLikesCountId, user.id);
+            })
+        );
+    }
+
+    function truncateText(text, maxLength) {
+        if (text.length > maxLength) {
+            return text.substring(0, maxLength) + "...";
+        } else {
+            return text;
+        }
+    }
+
+    async function ShowUsersAsync() {
+        addFollowingsToView();
+        addFollowersToView();
+    }
+
+    async function callRemoveFriend(friendId) {
+        var element = document.getElementById(`follower-card-${friendId}`);
+        element.style.display = "none";
+        var result = await makeAjaxRequest(`/api/User/RemoveFollower?friendId=${friendId}`, "POST");
+    }
+
+    ShowUsersAsync();
+</script>
+

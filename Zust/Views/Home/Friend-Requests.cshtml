@@ -1,0 +1,217 @@
+﻿@using Microsoft.AspNetCore.Identity;
+@using Zust.Entities.Models;
+@{
+    var userManager = Context.RequestServices.GetService<UserManager<User>>();
+    var user = await userManager.GetUserAsync(Context.User);
+    ViewData["Title"] = "Zust - Friend Requests";
+}
+
+<style>
+    .item {
+        width: 600px; /* Increase the width to your desired value */
+    }
+
+    .accept-icon {
+        color: var(--main-color);
+        font-size: 25px !important;
+        cursor: pointer;
+        min-height: 25px;
+    }
+
+    .decline-icon {
+        color: var(--red-color);
+        font-size: 25px !important;
+        cursor: pointer;
+        min-height: 25px;
+    }
+
+    .decline-icon:hover {
+        color: var(--red-color) !important;
+    }
+
+
+    @@media only screen and (max-width: 700px) {
+        .item {
+            width: 100%;
+            /*background-color: red;*/
+        }
+
+        #requestsBody {
+            width: 100%;
+            /*background-color: green;*/
+            margin: 0px;
+        }
+
+        .all-notifications-body {
+            padding: 0px;
+            margin: 0px;
+            width: 100%;
+            /*background-color: yellow;*/
+        }
+    }
+
+    .icon a {
+        margin-right: 10px;
+    }   
+
+    .custom-spinner-color {
+        color: var(--main-color);
+    }
+
+    #spinner{
+        margin: auto;
+        margin-top: 10px;
+    }
+
+    #container{
+        margin-top: 0px;
+        margin-bottom: 0px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+</style>
+
+<div class="all-notifications-body" id="container">
+
+    <div class="all-notifications-header d-flex justify-content-between align-items-center">
+        <h3 class="text-center w-100">Friend Requests</h3>
+    </div>
+
+    <div id="requestsBody">
+    </div>
+
+    <div id="spinner" class="spinner-border custom-spinner-color" role="status">
+        <span class="sr-only"></span>
+    </div>    
+</div>
+
+<script src="~/assets/js/jquery.min.js"></script>
+<link rel="stylesheet" href="~/assets//css/main.css" />
+<script src="~/assets/js/functions.js"></script>
+<script src="~/assets/js/signalr/dist/browser/signalr.js"></script>
+<script src="~/assets/js/userHub.js"></script>
+
+<script>
+    localStorage.setItem('activeMenuItem', '#5');
+
+    function startSpinner() {
+        $('#spinner').css("visibility", "visible");
+    }
+
+    function stopSpinner() {
+        $('#spinner').css("visibility", "hidden");
+    }
+
+    var requestsBody = document.getElementById("requestsBody");
+
+    async function getReceivedFriendRequests() {
+        var id = '@user.Id.ToString()';
+        return new Promise(function (resolve, reject) {
+            $.ajax({
+                url: `/api/FriendRequest/GetReceivedFriendRequests?userId=` + id,
+                method: 'GET',
+                success: function (data) {
+                    resolve(data);
+                },
+                error: function (error) {
+                    alert("Error occurred: " + error.responseText);
+                }
+            });
+        });
+    }
+
+    function getFriendRequestHtml(friendRequest) {
+        var date = getDateTimeDifference(friendRequest.requestDate)
+        var content = `
+                           <div id=${friendRequest.id} class="item d-flex justify-content-between align-items-center">
+                            <div class="figure">
+                                <a href="/home/users?id=${friendRequest.senderId}">
+                                   <img src="${friendRequest.sender.imageUrl}" class="rounded-circle" alt="image">
+                                </a>
+                            </div>
+                            <div class="text">
+                                <h4><a href="/home/users?id=${friendRequest.senderId}">${friendRequest.sender.userName}</a></h4>
+                                <span>Sent you a friend request</span>
+                                <span class="main-color">${date}</span>
+                            </div>
+                            <div class="icon" class="gap-5">
+                                <a title="Accept Request" onclick="acceptRequest('${friendRequest.id}')"><i class="flaticon-check-mark accept-icon"></i></a>
+                                <a title="Decline Request" onclick="declineRequest('${friendRequest.id}')"><i class="flaticon-x-mark decline-icon"></i></a>
+                            </div>
+                        </div>
+                    `;
+        return content;
+    }
+
+
+    async function showReceivedFriendRequests() {
+        var requests = await getReceivedFriendRequests();
+        if (requests != null && requests.length > 0){
+            requests.sort((a, b) => new Date(a.requestDate) - new Date(b.requestDate)).reverse();
+            var content = '';
+            for (var i = 0; i < requests.length; i++) {
+                var request = requests[i];
+                var subContent = getFriendRequestHtml(request);
+                content += subContent;
+            }
+            requestsBody.innerHTML = content;
+        }
+        else{
+            requestsBody.innerHTML= getNoResultHtml("No Requests", "You have recieved no friend requests.")
+        }
+        stopSpinner();
+    }
+
+    function acceptRequest(friendRequestId) {
+        document.getElementById(friendRequestId).remove();
+        $.ajax({
+            url: `/api/FriendRequest/AcceptRequest?requestId=` + friendRequestId,
+            method: 'POST',
+            success: async function (notification) {
+                showReceivedFriendRequests();
+                var friendRequestViewModel = {
+                    id: notification.fromUserId,
+                    hasFriendRequestPending: false,
+                    isFriend: true
+                };
+                await connection.invoke("SendNotification", notification, friendRequestViewModel);
+            },
+            error: function (error) {
+                alert("Error occurred: " + error.responseText);
+            }
+        });
+    }
+
+    function declineRequest(friendRequestId) {
+        document.getElementById(friendRequestId).remove();
+        $.ajax({
+            url: `/api/FriendRequest/DeclineRequest?requestId=` + friendRequestId,
+            method: 'POST',
+            success: async function (notification) {
+                showReceivedFriendRequests();
+                console.log(notification);
+                var friendRequestViewModel = {
+                    id: notification.fromUserId,
+                    hasFriendRequestPending: false,
+                    isFriend: false
+                };
+                console.log(friendRequestViewModel);
+                await connection.invoke("SendNotification", notification, friendRequestViewModel);
+            },
+            error: function (error) {
+                alert("Error occurred: " + error.responseText);
+            }
+        });
+    }
+
+    connection.on("ReceiveFriendRequest", function(friendRequest){
+        var html = getFriendRequestHtml(friendRequest);
+        requestsBody.innerHTML = html + requestsBody.innerHTML;
+    });
+
+    startSpinner();
+    showReceivedFriendRequests();
+</script>
+<script src="~/assets/js/jquery.min.js"></script>
+<script src="~/assets/js/functions.js"></script>

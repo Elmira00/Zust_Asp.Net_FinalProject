@@ -1,0 +1,322 @@
+@using Zust.Web.Helpers.ConstantHelpers
+@using Microsoft.AspNetCore.Identity;
+@using Zust.Entities.Models;
+@{
+    var userManager = Context.RequestServices.GetService<UserManager<User>>();
+    var user = await userManager.GetUserAsync(Context.User);
+    ViewData["Title"] = "Zust - Settings";
+}
+
+<div class="page-banner-box">
+    <h3>Account Settings</h3>
+</div>
+
+<div class="account-setting-list-tabs">
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="profile-information-tab" data-bs-toggle="tab" href="#profile-information" role="tab" aria-controls="profile-information">Profile Information</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link" id="close-account-tab" data-bs-toggle="tab" href="#close-account" role="tab" aria-controls="close-account">Close Account</a>
+        </li>
+    </ul>
+</div>
+
+<div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="profile-information" role="tabpanel">
+        <form class="account-setting-form" id="profile-form">
+            <h3>Profile Information</h3>
+
+            <div class="row">
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" class="form-control" placeholder="Username" id="username" required>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" class="form-control" placeholder="Email" id="email" required>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Date of Birth</label>
+                        <input type="text" class="form-control" placeholder="Date of birth" id="datepicker" required>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Birthplace</label>
+                        <input type="text" class="form-control" placeholder="Date of birth" id="birthplace" required>
+                    </div>
+                </div><div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Phone No:</label>
+                        <input type="text" class="form-control" placeholder="Phone no" id="phone">
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Occupation</label>
+                        <input type="text" class="form-control" placeholder="Occupation" id="occupation" required>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select class="form-select" required id="gender">
+                            <option selected="1">Gender</option>
+                            <option value="2">Male</option>
+                            <option value="3">Female</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group"> 
+                        <label>Relation Status</label>
+                        <select class="form-select" id="relation">
+                            <option selected="1">Relation Status</option>
+                            <option value="2">Married</option>
+                            <option value="3">Unmarried</option>
+                            <option value="4">Single</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Blood Group</label>
+                        <input type="text" class="form-control" placeholder="Blood Group" id="blood-group">
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Website</label>
+                        <input type="text" class="form-control" placeholder="Website" id="website">
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Language</label>
+                        <input type="text" class="form-control" placeholder="Language" id="language">
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Social Link</label>
+                        <input type="text" class="form-control" placeholder="Social Link" id="social-link">
+                    </div>
+                </div>  
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>About Me</label>
+                        <input type="text" class="form-control" placeholder="About Me" id="about-me">
+                    </div>
+                </div>   
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Education & Work</label>
+                        <input type="text" class="form-control" placeholder="Education & Work" id="education-work">
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Interests</label>
+                        <input type="text" class="form-control" placeholder="Interests" id="interest">
+                    </div>
+                </div>
+                <div class="col-lg-12 col-md-12">
+                    <button type="submit" class="default-btn">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="tab-pane fade" id="close-account" role="tabpanel">
+        <form class="account-setting-form" id="delete-form">
+            <div class="title">
+                <h3>Close Account</h3>
+                <p><span>Warning:</span> If you close your account, all your followers and friends will be unsubscribed and you will lose access forever.</p>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6 col-md-6">
+                    <div class="form-group">
+                        <label>Your Password</label>
+                        <input type="password" class="form-control" required id="delete-password">
+                    </div>
+                </div>
+
+                <div class="col-lg-12 col-md-12">
+                    <button type="submit" class="default-btn">Delete Account</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="~/assets/js/jquery.min.js"></script>
+<script src="~/assets/js/functions.js"></script>
+
+<script>
+    localStorage.setItem('activeMenuItem', '#9');
+
+    const user = @Html.Raw(Json.Serialize(user));
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    const relationshipMap = {
+        'Married': '2',
+        'Unmarried': '3',
+        'Single': '4'
+    };
+
+    const genderMap = {
+        'Male': '2',
+        'Female': '3'
+    };
+
+    function setUserDataToForm() {
+     
+        const relation = relationshipMap[user.relationshipStatus] || '';
+
+        const gender = genderMap[user.gender] || '';
+
+        const formattedDate = formatDate(user.birthday);
+
+        document.getElementById('username').value = user.userName;
+        document.getElementById('email').value = user.email;
+        document.getElementById('datepicker').value = formattedDate;
+        document.getElementById('birthplace').value = user.birthplace;
+        document.getElementById('phone').value = user.phoneNumber;
+        document.getElementById('occupation').value = user.occupation;
+        document.getElementById('gender').value = gender;
+        document.getElementById('relation').value = relation;
+        document.getElementById('blood-group').value = user.bloodGroup;
+        document.getElementById('website').value = user.website;
+        document.getElementById('language').value = user.languages;
+        document.getElementById('social-link').value = user.socialLink;
+        document.getElementById('about-me').value = user.aboutMe;
+        document.getElementById('education-work').value = user.educationWork;
+        document.getElementById('interest').value = user.interests;
+    }
+
+    setUserDataToForm();
+
+    const deleteForm = document.getElementById("delete-form");
+
+    var spinnerHtml = `
+                <div class="spinner-border text-primary" role="status" style="color:var(--main-color) !important; width:1.1rem; height:1.1rem; ">
+                    <span class="sr-only"></span>
+                </div>
+            `;
+
+    deleteForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        var myPassword = document.getElementById("delete-password").value;
+
+        var myData = {
+            username: user.userName,
+            password: myPassword
+        };
+
+        console.log(myData);
+
+        $.ajax({
+            url: '/api/profile/IsUsernameAndPasswordValid',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(myData),
+            success: function (data) {
+                var isValid = data;
+                if (!isValid) {
+                    showToast("Invalid password. Account deletion not possible.", "red");
+                    return;
+                }
+
+                deleteForm.innerHTML = spinnerHtml;
+
+                $.ajax({
+                    url: '/api/profile/DeleteProfile?userId=' + user.id, // Corrected URL concatenation
+                    type: 'DELETE',
+                    success: function (data) {
+                        location.href = '/account/login'; // Redirect to the login page after successful deletion.
+                    },
+                    error: function (errorData) {
+                        showToast("Sorry, there was an issue deleting your profile.", "red");
+                    }
+                });
+            },
+            error: function (errorData) {
+                showToast("Sorry, there was an issue deleting your profile.", "red");
+            }
+        });
+    });
+
+    function getGenderByValue(value) {
+        for (const gender in genderMap) {
+            if (genderMap[gender] === value) {
+                return gender;
+            }
+        }
+        return null; // Return null if the value is not found in the genderMap
+    }
+
+    function getRelationByValue(value) {
+        for (const relation in relationshipMap) {
+            if (relationshipMap[relation] === value) {
+                return relation;
+            }
+        }
+        return null; // Return null if the value is not found in the relationshipMap
+    }
+
+    const accountSettingsForm = document.getElementById("profile-form");
+
+    accountSettingsForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const userData = {
+            oldUserName: user.userName,
+            userName: document.getElementById('username').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            birthday: new Date(document.getElementById('datepicker').value.trim()),
+            birthplace: document.getElementById("birthplace").value.trim(),
+            phoneNumber: document.getElementById('phone').value.trim(),
+            occupation: document.getElementById('occupation').value.trim(),
+            gender: getGenderByValue(document.getElementById('gender').value.trim()),
+            relationshipStatus: getRelationByValue(document.getElementById('relation').value.trim()),
+            bloodGroup: document.getElementById('blood-group').value.trim(),
+            website: document.getElementById('website').value.trim(),
+            languages: document.getElementById('language').value.trim(),
+            socialLink: document.getElementById('social-link').value.trim(),
+            aboutMe: document.getElementById('about-me').value.trim(),
+            educationWork: document.getElementById('education-work').value.trim(),
+            interests: document.getElementById('interest').value.trim()
+        };
+
+        // Send the userData object to the API using AJAX
+        $.ajax({
+            url: '/api/Profile/UpdateProfile',
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(userData),
+            success: function (response) {
+                showToast("Your profile has been successfully updated.", "green");
+            },
+            error: function (error) {
+                showToast("Sorry, there was an issue updating your profile.", "red");
+            }
+        });
+    });
+</script>

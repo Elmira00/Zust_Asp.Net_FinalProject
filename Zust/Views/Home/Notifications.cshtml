@@ -1,0 +1,186 @@
+@using Zust.Web.Helpers.ConstantHelpers
+@using Microsoft.AspNetCore.Identity;
+@using Zust.Entities.Models;
+@{
+    var userManager = Context.RequestServices.GetService<UserManager<User>>();
+    var user = await userManager.GetUserAsync(Context.User);
+    ViewData["Title"] = "Zust - Notifications";
+}
+
+<style>
+    .transparent-button {
+        background-color: transparent;
+        border: 1px solid transparent;
+    }
+
+    .item {
+        width: 600px; /* Increase the width to your desired value */
+    }
+
+    @@media only screen and (max-width: 700px) {
+        .item {
+            width: 100%;
+            /*background-color: red;*/
+        }
+
+        #notificationsBody {
+            width: 100%;
+            /*background-color: green;*/
+            margin: 0px;
+        }
+
+        .all-notifications-body {
+            padding: 0px;
+            margin: 0px;
+            width: 100%;
+            /*background-color: yellow;*/
+        }
+    }
+
+    .custom-spinner-color {
+        color: var(--main-color);
+    }
+
+    #spinner {
+        margin: auto;
+        margin-top: 10px;
+    }
+
+    #container {
+        margin-top: 0px;
+        margin-bottom: 0px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .isRead,
+    .notRead {
+        height: 15px;
+        width: 15px;
+        border-radius: 50%;
+        background-color: var(--main-color);
+        margin-top: -2px;
+    }
+
+    .icon {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+    }
+</style>
+
+<div class="all-notifications-body" id="container">
+
+    <div class="all-notifications-header d-flex justify-content-between align-items-center">
+        <h3 class="text-center w-100">Notifications</h3>
+    </div>
+
+    <div id="notificationsBody">
+    </div>
+
+    <div class="load-more-posts-btn">
+        <button id="loadMore" class="transparent-button" onclick="showNotifications()"><i class="flaticon-loading"></i> Load More</button>
+    </div>
+</div>
+
+<script src="~/assets/js/jquery.min.js"></script>
+<script src="~/assets/js/functions.js"></script>
+<script src="~/assets/js/signalr/dist/browser/signalr.js"></script>
+<script src="~/assets/js/userHub.js"></script>
+
+<script>
+    var currentUserId = '@user.Id.ToString()';
+
+    async function setNotificationSeemed(notification) {
+        await makeAjaxRequest("/api/Notification/SetNotificationRead?notificationId=" + notification.id, "POST");
+    }
+
+    localStorage.setItem('activeMenuItem', '#4');
+
+    function createNotificationHtml(notification) {
+        var dateDiff = getDateTimeDifference(notification.date);
+        var notRead = '';
+        if (!notification.isRead) {
+            notRead = 'notRead';
+        }
+
+        //console.log("HERE");
+
+        var content = `
+                        <div class="item d-flex justify-content-between align-items-center">
+                            <div class="figure">
+                                  <a href="/home/users?id=${notification.fromUserId}"><img src="${notification.fromUser.imageUrl}" class="rounded-circle" style="height: 70px !important; width: 70px !important; object-fit:cover;" alt="image"></a>
+                            </div>
+                            <div class="text">
+                                <h4><a href="/home/users?id=${notification.fromUserId}">${notification.fromUser.userName}</a></h4>
+                                <span>${notification.message}</span>
+                                <span class="main-color">${dateDiff}</span>
+                            </div>
+                            <div class="icon">
+                                    <div class='${notRead}'></div>
+                                    <a onClick=removeNotification()><i class="flaticon-x-mark"></i></a>
+                            </div>
+                        </div>
+                    `;
+
+        return content;
+    }
+
+    var allNotifications = null;
+
+    async function setAllNotifications() {
+        var result = await makeAjaxRequest("/api/Notification/GetNotificationsOfUser?userId=" + currentUserId, "GET");
+        result.sort((a, b) => new Date(a.date) - new Date(b.date)).reverse();
+        allNotifications = result;
+    }
+
+    var contaier = document.getElementById("notificationsBody");
+    var notificationCountInView = 0;
+    var takeCount = 15;
+
+    var allContent = '';
+
+    async function showNotifications() {
+        if (allNotifications === null) {
+            await setAllNotifications();
+        }
+
+        if (allNotifications.length === 0) {
+            var html = getNoResultHtml("No Notifications", "You haven't received any notifications.");
+            contaier.innerHTML = html;
+        }
+        else {
+            var items = allNotifications.slice();
+            var notifications = items.splice(notificationCountInView, takeCount);
+            for (var i = 0; i < notifications.length; i++) {
+                try {
+                    var notification = notifications[i];
+                    if (notification != null) {
+                        await setNotificationSeemed(notification);
+                        var notificationHtml = createNotificationHtml(notification);
+                        contaier.innerHTML += notificationHtml;
+                        allContent += notificationHtml;
+                        notificationCountInView++;
+                    }
+                }
+                catch (error) {
+                    console.log("Error : ", error);
+                }
+            }
+        }
+        if (allNotifications.length === notificationCountInView) {
+            document.getElementById("loadMore").style.display = 'none';
+        }
+    }
+
+    connection.on("ReceiveNotification", async function (notification) {
+        await setNotificationSeemed(notification);
+        var notificationHtml = createNotificationHtml(notification);
+        var newHtml = notificationHtml + allContent;
+        contaier.innerHTML = newHtml;
+    });
+
+    showNotifications();
+</script>

@@ -1,0 +1,1022 @@
+﻿@using Microsoft.AspNetCore.Identity;
+@using Zust.Entities.Models;
+@using Zust.Web.Helpers.ConstantHelpers;
+@model IndexViewModel;
+@{
+    var userManager = Context.RequestServices.GetService<UserManager<User>>();
+    var user = await userManager.GetUserAsync(Context.User);
+    ViewData["Title"] = "Zust - Home Page";
+}
+
+<style>
+    .profile-image {
+        height: 100px !important;
+        width: 100px !important;
+        object-fit: cover;
+    }
+
+
+    .post-profile-image {
+        width: 250px !important;
+        height: 250px !important;
+        object-fit: cover !important; /* Maintain aspect ratio and cover the container */
+    }
+
+    #file-upload {
+        display: none;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    #media-preview {
+        max-width: 100%;
+        height: auto;
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+        #media-preview video {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto; /* Ensure video width adjusts based on aspect ratio */
+            height: auto; /* Ensure video height adjusts based on aspect ratio */
+        }
+
+    #text-area {
+        font-size: 17px;
+        padding: 10px 12px;
+        border: 1px solid var(--black-color);
+    }
+
+    #btn-container {
+        display: flex;
+        gap: 10px;
+    }
+
+        #btn-container button {
+            padding: 5px 25px !important;
+            font-size: 14px !important;
+        }
+
+    #followers-spinner {
+        margin-top: 40px;
+        color: var(--main-color);
+    }
+
+    #spinner-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .loading-text {
+        opacity: 0; /* Initially hidden */
+        animation-name: fadeIn;
+        animation-duration: 2s;
+        animation-fill-mode: forwards; /* Keep the final state of the animation */
+        animation-iteration-count: infinite; /* Repeat the animation indefinitely */
+    }
+
+    @@keyframes fadeIn {
+        0% {
+            opacity: 0;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+
+    .button-group {
+        gap: 20px;
+    }
+
+    .photo-btn button,
+    .tag-btn button {
+        min-height: 15px !important;
+        font-size: 17px !important;
+    }
+
+    @@media only screen and (max-width: 767px) {
+        .photo-btn,
+        .tag-btn {
+            margin-bottom: 10px;
+        }
+    }
+
+    video,
+    .post-video,
+    .image-post {
+        background-color: #fcfcfc;
+        max-width: 100%;
+        max-height: 100%;
+        width: auto; /* Ensure video width adjusts based on aspect ratio */
+        height: auto; /* Ensure video height adjusts based on aspect ratio */
+    }
+
+
+
+    .fit-image {
+        max-width: 100%;
+        max-height: 650px; /* Adjust the height as per your requirement */
+        object-fit: contain;
+    }
+
+    .advertisement-image {
+        background-color: black;
+        display: flex;
+        justify-content: center;
+        align-content: center;
+        border-radius: 5px;
+        margin-bottom: 20px; /* Adjust the value as per your desired gap size */
+    }
+
+        .advertisement-image:last-child {
+            margin-bottom: 0; /* Remove the margin for the last advertisement */
+        }
+
+    .widget-view-profile::before {
+        background-image: url(@user.CoverImage) !important;
+    }
+
+    .post-body *{
+        font-weight: bold;
+    }
+
+    .like-button {
+        cursor: pointer;
+        /*color: var(--main-color) !important;*/
+        background-color: #fff;
+    }
+
+    .like-button:hover {
+        /*color: var(--main-color) !important;*/
+    }
+
+        .like-button.liked {
+            /* Add the styles for the 'liked' state */
+            /*color: var(--red-color) !important;*/
+        }
+
+           .like-button.liked > * {
+                /*color: var(--red-color) !important;*/
+           }
+</style>
+
+<div class="row">
+    <div class="col-lg-3 col-md-12">
+        <aside class="widget-area">
+            @*View Profile*@
+            <div class="widget widget-view-profile">
+                <div class="profile-box d-flex justify-content-between align-items-center">
+                    <a href="/home/my-profile"><img src="@user.ImageUrl" alt="image" class="profile-image"></a>
+                    <div class="text ms-2">
+                        <h3><a href="/home/my-profile">@user.UserName</a></h3>
+                        <span>@user.Birthplace</span>
+                    </div>
+                </div>
+                <ul class="profile-statistics">
+                    <li>
+                        <a>
+                            <span class="item-number" id="post-like-count">0</span>
+                            <span class="item-text">Likes</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a>
+                            <span class="item-number" id="following-count">0</span>
+                            <span class="item-text">Following</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a>
+                            <span class="item-number" id="follower-count">0</span>
+                            <span class="item-text">Followers</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="profile-btn">
+                    <a href="/home/my-profile" class="default-btn">View Profile</a>
+                </div>
+            </div>
+
+
+            @*Static Watch Videos*@
+            <div class="widget widget-watch-video">
+                <h3 class="widget-title">Watch Video</h3>
+
+                <div class="watch-video-slides owl-carousel owl-theme" id="item">
+                    @foreach (var videoItem in Model.WatchVideos)
+                    {
+                        <div class="video-item">
+                            <img src="@videoItem.ImageUrl" alt="image">
+
+                            <a href="@videoItem.VideoUrl" class="video-btn popup-youtube">
+                                <i class="ri-play-fill"></i>
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="widget widget-advertisement">
+                <h3 class="widget-title">Advertisements</h3>
+
+                @foreach (var ads in Model.Advertisements)
+                {
+                    <a class="advertisement-image" target="_blank" href="@ads.AdvertisementUrl" onmouseover="advertisementHoverHandle(this.querySelector('img'), '@ads.LogoUrl')" onmouseout="restoreOriginalSize(this.querySelector('img'), '@ads.AdvertisementImageUrl')">
+                        <img src="@ads.AdvertisementImageUrl" alt="Image">
+                    </a>
+                }
+            </div>
+
+          @*  <div class="widget widget-suggested-groups">
+                <h3 class="widget-title">Suggested Groups</h3>
+                <article class="item">
+                    <a href="#" class="thumb">
+                        <span class="fullimage bg1" role="img"></span>
+                    </a>
+
+                    <div class="info">
+                        <h4 class="title">
+                            <a href="#">UX/UI Design Group</a>
+                        </h4>
+                        <span>5000+ Members</span>
+                        <a href="#" class="join-btn">Join Community</a>
+                    </div>
+                </article>
+                <article class="item">
+                    <a href="#" class="thumb">
+                        <span class="fullimage bg2" role="img"></span>
+                    </a>
+
+                    <div class="info">
+                        <h4 class="title">
+                            <a href="#">Job Search Group</a>
+                        </h4>
+                        <span>5000+ Members</span>
+                        <a href="#" class="join-btn">Join Community</a>
+                    </div>
+                </article>
+                <article class="item">
+                    <a href="#" class="thumb">
+                        <span class="fullimage bg3" role="img"></span>
+                    </a>
+
+                    <div class="info">
+                        <h4 class="title">
+                            <a href="#">Photography Group</a>
+                        </h4>
+                        <span>5000+ Members</span>
+                        <a href="#" class="join-btn">Join Community</a>
+                    </div>
+                </article>
+            </div>*@
+        </aside>
+    </div>
+
+    <div class="col-lg-6 col-md-12">
+        <div class="news-feed-area">
+            <div id="spinner-container">
+            </div>
+
+            <div class="news-feed news-feed-form" id="post-form">
+            </div>
+
+            <div class="news-feed news-feed-stories">
+                <div class="stories-title d-flex justify-content-between align-items-center">
+                    <h3>Statuses</h3>
+                </div>
+
+                <div class="row" id="statuses">
+                </div>
+            </div>
+
+            <div id="posts-container">
+            </div>
+
+            <div class="load-more-posts-btn" id="loader">
+                <a onclick="loadPosts()" style="cursor:pointer;"><i class="flaticon-loading"></i> Load More Posts</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-12">
+        <aside class="widget-area">
+            <div class="widget widget-weather">
+                <div class="weather-image">
+                    <a href="#"><img src="~/assets/images/weather/weather.jpg" alt="image"></a>
+                </div>
+            </div>
+
+            <div class="widget widget-birthday">
+                <div class="birthday-title d-flex justify-content-between align-items-center">
+                    <h3>Today Birthdays</h3>
+                </div>
+
+                <div id="today-birthdays">
+                </div>
+
+
+                <div class="birthday-title d-flex justify-content-between align-items-center">
+                    <h3>Recent Birthdays</h3>
+                </div>
+
+                <div id="recent-birthdays">
+                </div>
+
+                <div class="birthday-title d-flex justify-content-between align-items-center">
+                    <h3>Coming Birthdays</h3>
+                </div>
+
+                <div id="coming-birthdays">
+                </div>
+            </div>
+
+            <div class="widget widget-who-following">
+                <h3 class="widget-title">Who's Following</h3>
+
+                <div id="who-is-following">
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script src="~/assets/js/jquery.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="~/assets/js/functions.js"></script>
+<script src="~/assets/js/bootstrap.bundle.min.js"></script>
+<script src="~/assets/js/jquery.magnific-popup.min.js"></script>
+<script src="~/assets/js/jquery-ui.min.js"></script>
+<script src="~/assets/js/simplebar.min.js"></script>
+<script src="~/assets/js/metismenu.min.js"></script>
+<script src="~/assets/js/owl.carousel.min.js"></script>
+<script src="~/assets/js/wow.min.js"></script>
+<script src="~/assets/js/main.js"></script>
+<script src="~/assets/js/signalr/dist/browser/signalr.js"></script>
+<script src="~/assets/js/userHub.js"></script>
+
+<script>
+    function advertisementHoverHandle(element, newSource) {
+        element.dataset.originalWidth = element.offsetWidth;
+        element.dataset.originalHeight = element.offsetHeight;
+
+        var parentWidth = element.parentNode.offsetWidth;
+        var parentHeight = element.parentNode.offsetHeight;
+
+        var aspectRatio = element.naturalWidth / element.naturalHeight;
+
+        if (aspectRatio > parentWidth / parentHeight) {
+            element.style.maxWidth = parentWidth + "px";
+            element.style.maxHeight = (parentWidth / aspectRatio) + "px";
+        } else {
+            element.style.maxWidth = (parentHeight * aspectRatio) + "px";
+            element.style.maxHeight = parentHeight + "px";
+        }
+
+        element.addEventListener('transitionend', function () {
+            element.src = newSource;
+            element.style.opacity = 1;
+        });
+
+        element.src = newSource;
+    }
+
+    function restoreOriginalSize(element, oldSource) {
+        if (element.dataset.originalWidth && element.dataset.originalHeight) {
+            element.style.maxWidth = element.dataset.originalWidth + "px";
+            element.style.maxHeight = element.dataset.originalHeight + "px";
+            element.src = oldSource;
+        }
+    }
+
+    // Create Post Region
+    var spinnerContainer = document.getElementById("spinner-container");
+    var container = document.getElementById("post-form");
+
+    function startSpinner() {
+        spinnerContainer.innerHTML = `
+                                                                      <div class="spinner-border custom-spinner-color" role="status" id="followers-spinner">
+                                                                                <span class="sr-only"></span>
+                                                                      </div>
+                                                                      <p class="loading-text mt-3">Post is being created . . .</p>
+                                                                    `;
+    }
+
+    function stopSpinner() {
+        spinnerContainer.innerHTML = '';
+    }
+
+    function setPostForm() {
+        container.innerHTML = `
+                                                                            <h3 class="news-feed-title">Create New Post</h3>
+
+                                                                            <form onsubmit="handleSubmit(event)">
+                                                                                <div class="form-group">
+                                                                                    <textarea id="text-area" asp-for="CreatePostViewModel.Description" class="form-control" placeholder="Write something here..." required></textarea>
+
+                                                                                    <input type="file" id="file-upload" asp-for="CreatePostViewModel.MediaFile" accept="video/*,image/*" style="display: none;">
+                                                                                    <div id="media-preview"></div>
+                                                                                </div>
+                                                                                <ul class="button-group d-flex justify-content-between align-items-center">
+                                                                                    <li class="photo-btn">
+                                                                                        <button onclick="chooseMedia(event)"><i class="flaticon-gallery"></i> Choose Media</button>
+                                                                                    </li>
+                                                                                    <section id="btn-container">
+                                                                                        <li>
+                                                                                            <button type="submit" class="btn btn-success">Post</button>
+                                                                                        </li>
+                                                                                    </section>
+                                                                                </ul>
+                                                                            </form>
+                                                                        `;
+    }
+
+    setPostForm();
+
+    function handleSubmit(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        // Get the input values
+        var description = $('#text-area').val().trim();
+        var fileInput = $('#file-upload')[0];
+        var file = fileInput.files[0];
+
+        console.log(file);
+        console.log(fileInput);
+
+        // Create FormData object to send the data
+        var formData = new FormData();
+        formData.append('Description', description);
+        formData.append('MediaFile', file);
+
+        console.log(formData.description);
+        console.log(formData.file);
+
+        startSpinner();
+        container.innerHTML = '';
+
+        // Send the form data using jQuery Ajax
+        $.ajax({
+            url: '/api/Post/CreatePost',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (responsePost) {
+                stopSpinner();
+                setPostForm();
+                var newPost = {
+                    id: responsePost.id,
+                    description: responsePost.description,
+                    hasMediaContent: responsePost.hasMediaContent,
+                    contentUrl: responsePost.contentUrl,
+                    isVideo: responsePost.isVideo,
+                    createdAt: responsePost.createdAt,
+                    userId: responsePost.userId,
+                    user: responsePost.user
+                };
+                postsToLoad.unshift(newPost);
+                addPostsToView(postsToLoad, true);
+                showToast("Post was shared successfully!", "green");
+            },
+            error: function (xhr, status, error) {
+                stopSpinner();
+                setPostForm();
+                showToast("An error occured while sharing the post!", "red");
+            }
+        });
+
+    }
+
+    function chooseMedia(event) {
+        event.preventDefault();
+
+        const fileUpload = document.getElementById('file-upload');
+        const mediaPreview = document.getElementById('media-preview');
+
+        fileUpload.onchange = function (event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                let mediaElement;
+
+                if (file.type.includes('video')) {
+                    mediaElement = document.createElement('video');
+                    mediaElement.setAttribute('controls', true);
+                    mediaElement.src = e.target.result;
+                    mediaPreview.innerHTML = '';
+                    mediaPreview.appendChild(mediaElement);
+                    mediaPreview.style.padding = "0px";
+                } else if (file.type.includes('image')) {
+                    mediaElement = document.createElement('img');
+                    mediaElement.src = e.target.result;
+                    mediaPreview.innerHTML = '';
+                    mediaPreview.appendChild(mediaElement);
+                    mediaPreview.style.padding = "10px";
+                }
+
+                mediaPreview.style.border = "2px dashed var(--black-color)";
+
+            };
+
+            reader.readAsDataURL(file);
+        };
+
+        fileUpload.click();
+    }
+    // Create Post Region
+
+    // Others Region
+    var currentUserId = '@user.Id.ToString()';
+    setSocialCounts("follower-count", "following-count", "post-like-count", currentUserId);
+
+    localStorage.setItem('activeMenuItem', '#1');
+    // Others region
+
+    var currentUserProfile = '@user.ImageUrl.ToString()';
+
+    // Get Posts Region
+    async function createPostHtml(post) {
+        var content = '';
+
+        if (post.hasMediaContent && !post.isVideo) {
+            content = `
+                                                                    <div class="image-post" style="display:flex; justify-content: center;">
+                                                                            <img src="${post.contentUrl}" alt="image" class="fit-image">
+                                                                    </div>
+                                                                `;
+        }
+        else if (post.hasMediaContent && post.isVideo) {
+            content = `
+                                                                  <div class="post-video">
+                                                                       <video src="${post.contentUrl}" controls></video>
+                                                                  </div>
+                                                                `;
+        }
+
+        var dateDiff = getDateTimeDifference(post.createdAt);
+        var classlist = '';
+        var likeText = 'Like';
+        if (likedPostsIds.includes(post.id)) {
+            classlist = '.liked'
+            likeText = 'Unlike';
+        }
+
+        var likeCount = await makeAjaxRequest(`/api/Like/GetPostLikeCount?postId=${post.id}`, "GET");
+        var commentCount = await makeAjaxRequest(`/api/Post/GetCountOfCommentsOfPost/${post.id}`, "GET")
+
+        var html = `
+                                                                <div class="news-feed news-feed-post" id="post-item-${post.id}">
+                                                                    <div class="post-header d-flex justify-content-between align-items-center">
+                                                                            <div class="image">
+                                                                                <a href="/home/users?id=${post.userId}"><img src="${post.user.imageUrl}" class="post-profile-image" style="background-color: gray !important; max-height: 80px !important; max-width: 80px !important; border-radius: 50%;" alt="image"></a>
+                                                                        </div>
+                                                                        <div class="info ms-3">
+                                                                            <span class="name"><a href="/home/users?id=${post.userId}">${post.user.userName}</a></span>
+                                                                            <span class="small-text"><a>${dateDiff}</a></span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div class="post-body">
+                                                                        <p>${post.description}</p>
+                                                                        ${content}
+                                                                        <ul class="post-meta-wrap d-flex justify-content-between align-items-center">
+                                                                             <li class="post-react">
+                                                                                <a onclick="likePost('${post.id}')" id="post-${post.id}" class="like-button ${classlist}">
+                                                                                    <i class="flaticon-like"></i>
+                                                                                    <span id="like-text-${post.id}">${likeText}</span>
+                                                                                    <span class="number">${likeCount}</span>
+                                                                                </a>
+                                                                            </li>
+                                                                            <li class="post-comment">
+                                                                                <a href="/home/posts?id=${post.id}">
+                                                                                    <i class="flaticon-comment"></i>
+                                                                                    <span>Comments</span>
+                                                                                    <span class="number" id='comment-count-${post.id}'>${commentCount}</span>
+                                                                                </a>
+                                                                            </li>
+                                                                            <li class="post-share">
+                                                                                <a href="#">
+                                                                                    <i class="flaticon-share"></i>
+                                                                                    <span>Share</span>
+                                                                                </a>
+                                                                            </li>
+                                                                        </ul>
+                                                                       <form class="post-footer">
+                                                                             <div class="footer-image">
+                                                                                <a href="/home/my-profile"><img src="${currentUserProfile}" class="post-profile-image" style="background-color: gray !important; max-height: 80px !important; max-width: 80px !important; border-radius: 50%;"  alt="image"></a>
+                                                                            </div>
+                                                                            <div class="form-group" style="padding-left: 90px;">
+                                                                                <textarea id="commentText-${post.id}" class="form-control" placeholder="Write a comment..."></textarea>
+                                                                                <label>
+                                                                                    <a onclick="sendComment('${post.id}')">
+                                                                                        <i class="ri-send-plane-line"></i>
+                                                                                    </a>
+                                                                                </label>
+                                                                            </div>
+                                                                        </form>
+                                                                    </div>
+                                                                </div>
+
+                                                                <hr/>`;
+        return html;
+    }
+
+    async function makeRequest(url, method, data) {
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json' // Set the Content-Type header to application/json
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const result = await response.json();
+            return result;
+        } catch (error) {
+            console.error('Error making AJAX request:', error);
+            throw error;
+        }
+    }
+
+    var spinnerHtml = `
+            <div class="spinner-border text-primary" role="status" style="color:var(--main-color) !important; width:1.1rem; height:1.1rem; ">
+                <span class="sr-only"></span>
+            </div>
+        `;
+
+    async function sendComment(postId) {
+        try {
+            const commentTextContainer = document.getElementById(`commentText-${postId}`);
+            const commentText = commentTextContainer.value;
+
+            if (commentText.trim() === '') {
+                return;
+            }
+
+            const response = await makeRequest("/api/Post/AddComment", "POST", {
+                postId: postId,
+                text: commentText,
+                userId: currentUserId
+            });
+
+            // Handle the response (e.g., show the comment on the page)
+
+            showToast("Commet was shared successfully!", "green");
+            commentTextContainer.value = '';
+
+            var commentCountId = `comment-count-${postId}`;
+            var item = document.getElementById(commentCountId);
+            item.innerHTML = spinnerHtml;
+            var commentCount = await makeAjaxRequest(`/api/Post/GetCountOfCommentsOfPost/${postId}`, "GET")
+            item.innerHTML = commentCount;
+
+            const notification = response.notification;
+            await connection.invoke("SendCommentNotification", notification);
+        } catch (error) {
+            showToast("Error sharing comment!", "red");
+            commentTextContainer.value = '';
+        }
+    }
+
+    function likePost(postId) {
+        const likeButton = document.getElementById(`post-${postId}`);
+
+        likeButton.classList.add('liked');
+
+        const likeCountElement = document.querySelector(`#post-${postId} .number`);
+
+        var text = document.getElementById(`like-text-${postId}`);
+        if (text) {
+            if (text.innerText === 'Like') {
+                makeAjaxRequest(`/api/Like/LikePost?postId=${postId}`, 'POST')
+                    .then(updatedLikeCount => {
+                        if (likeCountElement) {
+                            likeCountElement.textContent = updatedLikeCount;
+                        }
+                    })
+                    .catch(error => {
+                        alert('Error liking the post:', error);
+                        likeButton.classList.toggle('liked');
+                    });
+
+                text.innerText = 'Unlike';
+            } else {
+                makeAjaxRequest(`/api/Like/UnlikePost?postId=${postId}`, 'POST')
+                    .then(updatedLikeCount => {
+                        if (likeCountElement) {
+                            likeCountElement.textContent = updatedLikeCount;
+                        }
+                    })
+                    .catch(error => {
+                        alert('Error unliking the post:', error);
+                        likeButton.classList.toggle('liked');
+                    });
+                    likeButton.classList.remove("liked");
+                text.innerText = 'Like';
+            }
+        }
+    }
+
+
+    // Fisher-Yates shuffle algorithm
+    function shuffleArray(array) {
+        var currentIndex = array.length;
+        var temporaryValue, randomIndex;
+
+        // While there remain elements to shuffle
+        while (currentIndex !== 0) {
+            // Pick a remaining element
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex -= 1;
+
+            // Swap the current element with a random element
+            temporaryValue = array[currentIndex];
+            array[currentIndex] = array[randomIndex];
+            array[randomIndex] = temporaryValue;
+        }
+
+        return array;
+    }
+
+    function getAllPosts() {
+        return new Promise(function (resolve, reject) {
+            $.ajax({
+                url: '/api/Post/GetAllPosts',
+                type: 'GET',
+                success: function (response) {
+                    resolve(response);
+                },
+                error: function (xhr, status, error) {
+                    reject(new Error(xhr.responseText));
+                }
+            });
+        });
+    }
+
+    var postCountInView = 0;
+    var allPosts = [];
+
+    function startLoaderSpinner() {
+        var spinner = `
+                                                        <div class="spinner-border custom-spinner-color" role="status">
+                                                            <span class="sr-only"></span>
+                                                        </div>`;
+        $('#loader').prop('disabled', true);
+        $('#loader').html(spinner);
+    }
+
+    function stopLoaderSpinner() {
+        $('#loader').prop('disabled', false);
+        $('#loader').html('<a onclick="loadPosts()" style="cursor:pointer;"><i class="flaticon-loading"></i> Load More Posts</a>');
+    }
+
+    var postsToLoad;
+
+    var likedPostsIds;
+
+    async function loadPosts() {
+        likedPostsIds = await makeAjaxRequest("/api/Like/GetPostIdsLiked?userId=" + currentUserId, "GET");
+        startLoaderSpinner();
+        try {
+            if (allPosts.length === 0) {
+                allPosts = await getAllPosts();
+                allPosts = shuffleArray(allPosts);
+            }
+            postsToLoad = allPosts.slice(postCountInView, postCountInView + 10);
+            postCountInView += postsToLoad.length;
+            addPostsToView(postsToLoad)
+            stopLoaderSpinner();
+        } catch (error) {
+            alert("Error occurred: " + error.responseText);
+            stopLoaderSpinner();
+        }
+    }
+
+    function addPostsToView(posts, reset = false) {
+        var container = document.getElementById("posts-container");
+        if (reset) {
+            container.innerHTML = "";
+        }
+        posts.forEach(async function (post) {
+            var postHtml = await createPostHtml(post);
+            // Append the postHtml to container
+            container.innerHTML += postHtml;
+        });
+    }
+
+    function getRandomImagePaths() {
+        return new Promise(function (resolve, reject) {
+            $.ajax({
+                url: '/api/Static/GetRandomStatusImagePaths',
+                type: 'GET',
+                success: function (response) {
+                    resolve(response);
+                },
+                error: function (error) {
+                    reject(new Error(xhr.responseText));
+                }
+            });
+        });
+    }
+
+    function createStatusHtml(statusImagePath, author) {
+        var content = `
+                                                     <div class="col-lg-2 col-sm-4 col-4">
+                                                        <div class="stories-item">
+                                                            <a>
+                                                                <img src="${statusImagePath}" alt="image">
+                                                            </a>
+                                                            <span><a>${author}</a></span>
+                                                        </div>
+                                                    </div>`;
+        return content;
+    }
+
+    const statusCount = 6;
+
+    function getRandomAuthorNames(count) {
+        const authorNames = [
+            "John",
+            "Emily",
+            "David",
+            "Sophia",
+            "James",
+            "Olivia",
+            "Daniel",
+            "Emma",
+            "Michael",
+            "Isabella",
+            "Joseph",
+            "Ava",
+            "William",
+            "Garcia",
+            "Alexander",
+            "Charlotte",
+            "Benjamin",
+            "Amelia",
+            "Matthew",
+            "Sofia"
+        ];
+
+        const randomAuthorNames = [];
+
+        while (randomAuthorNames.length < count) {
+            const randomIndex = Math.floor(Math.random() * authorNames.length);
+            const randomAuthorName = authorNames[randomIndex];
+
+            if (!randomAuthorNames.includes(randomAuthorName)) {
+                randomAuthorNames.push(randomAuthorName);
+            }
+        }
+
+        return randomAuthorNames;
+    }
+
+    async function setStatuses() {
+        var statusImages = await getRandomImagePaths();
+        if (statusImages === null || statusImages.count === 0) {
+            statusImages = Array(statusCount).fill("https://res.cloudinary.com/dax9yhk8g/image/upload/v1689665492/noContentFound_m74is3.png"); // no content image
+        }
+
+        const randomAuthors = getRandomAuthorNames(statusCount);
+
+        var htmlContainer = '';
+        for (var i = 0; i < statusImages.length; i++) {
+            var html = createStatusHtml(statusImages[i], randomAuthors[i]);
+            htmlContainer += html;
+        }
+        var statusesContainer = document.getElementById("statuses");
+        statusesContainer.innerHTML = htmlContainer;
+    }
+
+    async function setSpecialUsers() {
+        var specialUsers = await getSpecialUsers();
+        if (specialUsers != null && specialUsers.count > 0) {
+            for (var i = 0; i < specialUsers.length; i++) {
+                var specialUser = specialUsers[i]
+                var html = createStatusHtml(statusImages[i], randomAuthors[i]);
+                htmlContainer += html;
+            }
+        }
+
+    }
+
+    function createBirthdayHtml(user, date) {
+        var content = `
+                                <article class="item">
+                                    <a href="/home/users?id=${user.id}" class="thumb">
+                                        <img class="rounded-circle" src="${user.imageUrl}"/>
+                                    </a>
+
+                                    <div class="info">
+                                        <h4 class="title">
+                                            <a href="/home/users?id=${user.id}">${user.userName}</a>
+                                        </h4>
+                                        <span>${date}</span>
+                                    </div>
+                                </article>
+                            `;
+
+        return content;
+    }
+
+    async function setBirthdays() {
+        var todayBirthdaysUsers = await makeAjaxRequest("/api/User/GetUsersWithTodayBirthday?userId=" + currentUserId, "GET");
+        var containerToday = document.getElementById("today-birthdays");
+        containerToday.style.marginBottom = "25px";
+        if (todayBirthdaysUsers != null && todayBirthdaysUsers.length > 0) {
+            for (var i = 0; i < todayBirthdaysUsers.length; i++) {
+                var user = todayBirthdaysUsers[i];
+                var html = createBirthdayHtml(user, "Today");
+                containerToday.innerHTML += html;
+            }
+        }
+        else {
+            containerToday.innerHTML = "Today, there are no birthdays among the users.";
+        }
+
+        var recentBirthdaysUsers = await makeAjaxRequest("/api/User/GetUsersWithRecentBirthday?userId=" + currentUserId, "GET");
+        var containerRecent = document.getElementById("recent-birthdays");
+        containerRecent.style.marginBottom = "25px";
+        if (recentBirthdaysUsers != null && recentBirthdaysUsers.length > 0) {
+
+            for (var i = 0; i < recentBirthdaysUsers.length; i++) {
+                var user = recentBirthdaysUsers[i];
+                var html = createBirthdayHtml(user, user.birthday);
+                containerRecent.innerHTML += html;
+            }
+        }
+        else {
+            containerRecent.innerHTML = "Recently, there haven't been any birthdays among the users."
+        }
+
+        var comingBirthdaysUsers = await makeAjaxRequest("/api/User/GetUsersWithComingBirthday?userId=" + currentUserId, "GET");
+        var containerComing = document.getElementById("coming-birthdays");
+        containerComing.style.marginBottom = "25px";
+        if (comingBirthdaysUsers != null && comingBirthdaysUsers.length > 0) {
+            for (var i = 0; i < comingBirthdaysUsers.length; i++) {
+                var user = comingBirthdaysUsers[i];
+                var html = createBirthdayHtml(user, user.birthday);
+                containerComing.innerHTML += html;
+            }
+        }
+        else {
+            containerComing.innerHTML = "There are no upcoming birthdays among the users.";
+        }
+    }
+
+    // Function to generate the HTML for each follower
+    function generateFollowerHTML(follower) {
+        var redirectPage = `/home/users?id=${follower.id}`;
+        var html = `
+                  <div class="following-item d-flex justify-content-between align-items-center">
+                    <a href="${redirectPage}">
+                        <img src="${follower.imageUrl}" class="rounded-circle" alt="image">
+                    </a>
+                    <span class="name">
+                        <a href="${redirectPage}">${follower.userName}</a>
+                    </span>
+                  </div>
+                `;
+        return html;
+    }
+
+    // Function to add followers to the container
+    function addFollowersToContainer(followers) {
+        var container = document.getElementById('who-is-following');
+        for (var i = 0; i < followers.length; i++) {
+            var follower = followers[i];
+            var followerHTML = generateFollowerHTML(follower);
+            container.innerHTML += followerHTML;
+        }
+    }
+
+    getRandomFollowers(currentUserId)
+        .then(function (followers) {
+            var shuffledFollowers = shuffleArray(followers);
+            var selectedFollowers = shuffledFollowers.slice(0, 5);
+            addFollowersToContainer(selectedFollowers);
+        })
+        .catch(function (error) {
+            //alert("Error fetching followers: ", error);
+        });
+
+    setStatuses();
+    setBirthdays();
+    loadPosts();
+</script>
+

@@ -1,0 +1,142 @@
+@using Zust.Web.Models;
+@model RegisterViewModel
+
+@{
+    Layout = null;
+    ViewData["Title"] = "Zust - Register";
+}
+
+<!doctype html>
+<html lang="zxx">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links of CSS files -->
+    <link rel="stylesheet" href="~/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="~/assets/css/animate.min.css">
+    <link rel="stylesheet" href="~/assets/css/remixicon.css">
+    <link rel="stylesheet" href="~/assets/css/flaticon.css">
+    <link rel="stylesheet" href="~/assets/css/jquery-ui.min.css">
+    <link rel="stylesheet" href="~/assets/css/magnific-popup.min.css">
+    <link rel="stylesheet" href="~/assets/css/simplebar.min.css">
+    <link rel="stylesheet" href="~/assets/css/metismenu.min.css">
+    <link rel="stylesheet" href="~/assets/css/owl.carousel.min.css">
+    <link rel="stylesheet" href="~/assets/css/owl.theme.default.min.css">
+    <link rel="stylesheet" href="~/assets/css/style.css">
+    <link rel="stylesheet" href="~/assets/css/responsive.css">
+
+    <title>Zust - Register</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <link rel="icon" type="image/png" href="~/assets/images/favicon.png">
+</head>
+
+<body>
+    @*Errors *@
+    <div id="errors">
+    </div>
+
+    <!-- Start Preloader Area -->
+    <div class="preloader-area">
+        <div class="spinner">
+            <div class="inner">
+                <div class="disc"></div>
+                <div class="disc"></div>
+                <div class="disc"></div>
+            </div>
+        </div>
+    </div>
+    <!-- End Preloader Area -->
+    <!-- Start Preloader Area -->
+    <div class="profile-authentication-area">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 col-md-12">
+                    <div class="profile-authentication-image">
+                        <div class="d-table">
+                            <div class="d-table-cell">
+                                <div class="content-image">
+                                    <div class="logo">
+                                        <a href="/home/index"><img src="~/assets/images/logo.png" alt="Zust"></a>
+                                    </div>
+                                    <div class="vector-image">
+                                        <img src="~/assets/images/vector.png" alt="image">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 col-md-12">
+                    <div class="register-form">
+                        <h2>Register</h2>
+
+                        <form asp-controller="authentication" asp-action="register" method="post" enctype="application/x-www-form-urlencoded">
+                            <div class="form-group">
+                                <label asp-for="Username">Name</label>
+                                <input type="text" class="form-control" asp-for="Username" value="@Model.Username" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label asp-for="Email">Email</label>
+                                <input type="email" class="form-control" asp-for="Email" value="@Model.Email" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" asp-for="Password" value="@Model.Password">
+                                    <div class="input-group-append">
+                                        <button class="btn toggle-password" type="button" onclick="togglePasswordVisibility(this)">
+                                            <i class="fa fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (Model.Errors.Count > 0)
+                            {
+                                <p class="text-danger">@Model.Errors[0]</p>
+                            }
+
+                            <button type="submit" class="default-btn">Register</button>
+                        </form>
+
+                        <a href="/account/login" class="lost-your-password mt-5">Have an account? Login Now!</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Preloader Area -->
+    <!-- Links of JS files -->
+    <script src="~/assets/js/jquery.min.js"></script>
+    <script src="~/assets/js/functions.js"></script>
+    <script src="~/assets/js/functions.js"></script>
+    <script src="~/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/js/jquery.magnific-popup.min.js"></script>
+    <script src="~/assets/js/jquery-ui.min.js"></script>
+    <script src="~/assets/js/simplebar.min.js"></script>
+    <script src="~/assets/js/metismenu.min.js"></script>
+    <script src="~/assets/js/owl.carousel.min.js"></script>
+    <script src="~/assets/js/wow.min.js"></script>
+    <script src="~/assets/js/main.js"></script>
+    <script src="~/assets/js/register.js"></script>
+    <script>
+        function togglePasswordVisibility(button) {
+            var passwordInput = button.parentNode.previousElementSibling;
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                button.innerHTML = '<i class="fa fa-eye-slash"></i>';
+            } else {
+                passwordInput.type = 'password';
+                button.innerHTML = '<i class="fa fa-eye"></i>';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,519 @@
+﻿@using Microsoft.AspNetCore.Identity;
+@using Zust.Entities.Models;
+@using Zust.Web.Helpers.ConstantHelpers;
+@model Zust.Entities.Models.User;
+@{
+    var userManager = Context.RequestServices.GetService<UserManager<User>>();
+    var user = await userManager.GetUserAsync(Context.User);
+    ViewData["Title"] = $"Zust - {Model.UserName}";
+}
+
+<style>
+    .profile-image {
+        width: 250px !important;
+        height: 250px !important;
+        object-fit: cover !important; /* Maintain aspect ratio and cover the container */
+    }
+
+    .cancel-btn {
+        background-color: var(--yellow-color);
+        color: var(--black-color);
+    }
+
+    .remove-friend-btn {
+        background-color: var(--red-color);
+        color: var(--white-color);
+    }
+
+    .send-request-btn {
+        background-color: var(--main-color);
+        color: var(--white-color);
+    }
+
+    #photos {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #posts-area {
+        width: 45%;
+    }
+
+    .post-body * {
+        font-weight: bold !important;
+    }
+
+    video,
+    .post-video,
+    .image-post {
+        background-color: #fcfcfc;
+        max-width: 100%;
+        max-height: 100%;
+        width: auto; /* Ensure video width adjusts based on aspect ratio */
+        height: auto; /* Ensure video height adjusts based on aspect ratio */
+    }
+
+</style>
+
+<link rel="stylesheet" href="~/assets/css/main.css" />
+
+<div class="my-profile-inner-box" id="body">
+
+    <div class="profile-cover-image">
+        <a href="#">
+            <img src="@Model.CoverImage" alt="image">
+        </a>
+    </div>
+
+    <div class="profile-info-box">
+        <div class="inner-info-box d-flex justify-content-between align-items-center">
+            <div class="info-image" >
+                <div>
+                    <img src="@Model.ImageUrl" alt="image" class="profile-image">
+                </div>
+            </div>
+            <div class="info-text ms-3">
+                <h3><a href='/home/my-profile'>@Model.UserName</a></h3>
+
+                <span><a id="emailElement" href="mailto:@Model.Email">@Model.Email</a></span>
+
+                <h3>
+                    <div style="display: flex; margin-top: 10px;" id="buttons">
+                    </div>
+                </h3>
+            </div>
+            <ul class="statistics">
+                <li>
+                    <a href="#">
+                        <span class="item-number" id="post-like-count">0</span>
+                        <span class="item-text">Likes</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <span class="item-number" id="followings-count">0</span>
+                        <span class="item-text">Following</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <span class="item-number" id="followers-count">0</span>
+                        <span class="item-text">Followers</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="profile-list-tabs">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="about-tab" data-bs-toggle="tab" href="#about" role="tab" aria-controls="about">About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="photos-tab" data-bs-toggle="tab" href="#photos" role="tab" aria-controls="photos">Posts</a>
+                </li>
+            </ul>
+        </div>
+
+        <ul class="profile-social">
+            <li>
+                <a href="https://www.facebook.com/" target="_blank">
+                    <img src="~/assets/images/social/facebook.png" alt="image">
+                </a>
+            </li>
+            <li>
+                <a href="https://twitter.com/" target="_blank">
+                    <img src="~/assets/images/social/twitter.png" alt="image">
+                </a>
+            </li>
+            <li>
+                <a href="https://www.pinterest.com/" target="_blank">
+                    <img src="~/assets/images/social/pinterest.png" alt="image">
+                </a>
+            </li>
+            <li>
+                <a href="https://www.linkedin.com/" target="_blank">
+                    <img src="~/assets/images/social/linkedin.png" alt="image">
+                </a>
+            </li>
+            <li>
+                <a href="https://www.instagram.com/" target="_blank">
+                    <img src="~/assets/images/social/instagram.png" alt="image">
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+
+
+<div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="about" role="tabpanel">
+        <div class="row">
+            <div class="col-lg-3 col-md-12">
+                <div class="about-personal-information">
+                    <div class="about-header d-flex justify-content-between align-items-center">
+                        <div class="title">Personal Information</div>
+                    </div>
+
+                    <ul class="information-list">
+                        <li>
+                            <span>Email:</span>
+                            <a href="mailto:info@zust.com" class="personal-information">
+                                @(string.IsNullOrEmpty(Model.Email) ? Constants.NoData : Model.Email)
+                            </a>
+                        </li>
+                        <li>
+                            <span>Birthday:</span>
+                            <span class="personal-information">
+                                @Model.Birthday
+                            </span>
+                        </li>
+                        <li>
+                            <span>Occupation:</span>
+                            <span class="personal-information">
+                                @(string.IsNullOrEmpty(Model.Occupation) ? Constants.NoData : Model.Occupation)
+                            </span>
+                        </li>
+                        <li>
+                            <span>Birthplace:</span>
+                            <span class="personal-information">
+                                @(string.IsNullOrEmpty(Model.Birthplace) ? Constants.NoData : Model.Birthplace)
+                            </span>
+                        </li>
+                        <li>
+                            <span>Phone:</span>
+                            @if (string.IsNullOrEmpty(Model.PhoneNumber))
+                            {
+                                <span class="personal-information">@Constants.NoData</span>
+                            }
+                            else
+                            {
+                                <a href="@Model.PhoneNumber" class="personal-information">@Model.PhoneNumber</a>
+                            }
+                        </li>
+
+                        <li>
+                            <span>Gender:</span>
+                            <span class="personal-information">
+                                @(string.IsNullOrEmpty(Model.Gender) ? Constants.NoData : Model.Gender)
+                            </span>
+                        </li>
+                        <li>
+                            <span>Relationship Status:</span>
+                            <span class="personal-information">
+                                @(string.IsNullOrEmpty(Model.RelationshipStatus) ? Constants.NoData : Model.RelationshipStatus)
+                            </span>
+                        </li>
+                        <li>
+                            <span>Blood Group:</span>
+                            <span class="personal-information">
+                                @(string.IsNullOrEmpty(Model.BloodGroup) ? Constants.NoData : Model.BloodGroup)
+                            </span>
+                        </li>
+                        <li>
+                            <span>Website:</span>
+                            @if (string.IsNullOrEmpty(Model.Website))
+                            {
+                                <span class="personal-information">@Constants.NoData</span>
+                            }
+                            else
+                            {
+                                <a href="@Model.Website" class="personal-information">@Model.Website</a>
+                            }
+                        </li>
+
+                        <li>
+                            <span>Social Link:</span>
+                            @if (string.IsNullOrEmpty(Model.SocialLink))
+                            {
+                                <span class="personal-information">@Constants.NoData</span>
+                            }
+                            else
+                            {
+                                <a href="@Model.SocialLink" class="personal-information">@Model.SocialLink</a>
+                            }
+                        </li>
+
+                        <li>
+                            <span>Languages:</span>
+                            <span class="personal-information">
+                                @(string.IsNullOrEmpty(Model.Languages) ? Constants.NoData : Model.Languages)
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-9 col-md-12">
+                <div class="about-details-information">
+                    <!-- About Me -->
+                    <div class="information-box-content">
+                        <div class="information-header d-flex justify-content-between align-items-center">
+                            <div class="title">About Me!</div>
+                            <div class="dropdown" id="dropdown"></div>
+                        </div>
+                        <div class="content">
+                            <p class="personal-information">
+                                @(string.IsNullOrEmpty(Model.AboutMe) ? Constants.NoData : Model.AboutMe)
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Education & Work -->
+                    <div class="information-box-content">
+                        <div class="information-header d-flex justify-content-between align-items-center">
+                            <div class="title">Education & Work</div>
+                        </div>
+                        <div class="box-content">
+                            <p class="personal-information">
+                                @(string.IsNullOrEmpty(Model.EducationWork) ? Constants.NoData : Model.EducationWork)
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Interests -->
+                    <div class="information-box-content">
+                        <div class="information-header d-flex justify-content-between align-items-center">
+                            <div class="title">Interests</div>
+                        </div>
+                        <div class="box-content">
+                            <p class="personal-information">
+                                @(string.IsNullOrEmpty(Model.Interests) ? Constants.NoData : Model.Interests)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="photos" role="tabpanel">
+        <div class="news-feed-area" id="posts-area"></div>
+    </div>
+
+</div>
+
+<script src="~/assets/js/jquery.min.js"></script>
+<script src="~/assets/js/functions.js"></script>
+<script src="~/assets/js/signalr/dist/browser/signalr.js"></script>
+<script src="~/assets/js/userHub.js"></script>
+
+<script>
+    var userId = '@Model.Id.ToString()';
+
+    var currentUserId = '@user.Id.ToString()';
+    setSocialCounts("followers-count", "followings-count", "post-like-count", userId);
+
+    //var sentFriendRequests;
+
+    //async function callGetSentFriendRequests() {
+    //    try {
+    //        sentFriendRequests = await getSentFriendRequests(currentUserId);
+    //        console.log(sentFriendRequests);
+    //    } catch (error) {
+    //        alert("Error occurred: " + error.responseText);
+    //    }
+    //}
+    var buttonsContainer = document.getElementById("buttons");
+
+
+    async function addFollowAndMessageButtons() {
+        //await callGetSentFriendRequests();
+
+        if (currentUserId == '@Model.Id')
+            return;
+
+
+        var userModel = @Html.Raw(Json.Serialize(Model));
+
+        var user = await makeAjaxRequest(`/api/User/GetUser/${userId}`, "GET");
+        console.log(user);
+
+        var btnHtml = getButtonHtml(user);
+        //var btnText = getButtonText(sentFriendRequests, userModel);
+
+        //var bgcolor = 'var(--black-color)';
+        //var color = 'var(--black-color)';
+        //var func = '';
+
+        //if (btnText == 'Cancel Follow Request') {
+        //    func = `callCancelFriendRequest('${userModel.id}')`;
+        //    bgcolor = 'var(--yellow-color)';
+        //}
+        //else if (btnText == 'Unfollow') {
+        //    func = `callRemoveFriend('${userModel.id}')`;
+        //    color = 'var(--white-color)'
+        //    bgcolor = 'var(--red-color)';
+        //}
+        //else if (btnText == 'Follow') {
+        //    func = `callSendFriendRequest('${userModel.id}')`;
+        //    color = 'var(--white-color)';
+        //    bgcolor = 'var(--main-color)';
+        //}
+
+        //console.log(func);
+        //var btnHtml = `
+        //        <div class="send-message-button ms-3">
+        //                <a onclick="${func}" class="btn" style='background-color:${bgcolor} !important; color: ${color} !important;'>${btnText}</a>
+        //            </div>
+        //    `;
+        //console.log(btnHtml);
+
+        buttonsContainer.innerHTML = btnHtml;
+
+        buttonsContainer.innerHTML += `
+                            <div class="send-message-button ms-3">
+                                 <a href="/home/chats?userId=${userId}" class="btn" style='background-color:var(--main-color); color: var(--white-color)'>Send Message</a>
+                            </div>
+                `;
+    }
+
+    async function reload(userId, myHasFriendRequestPending, myIsFriend) {
+        var user = {
+            id: userId,
+            hasFriendRequestPending: myHasFriendRequestPending,
+            isFriend: myIsFriend
+        };
+        var btnHtml = getButtonHtml(user);
+
+        buttonsContainer.innerHTML = btnHtml;
+
+        buttonsContainer.innerHTML += `
+                <div class="send-message-button ms-3">
+                        <a href="/home/chats?userId=${userId}" class="btn" style='background-color:var(--main-color); color: var(--white-color)'>Send Message</a>
+                </div>
+            `;
+
+        const buttons = document.querySelectorAll('.btn');
+        if (buttons.length > 0) {
+            // Disable the first button
+            buttons[0].disabled = true;
+
+            // Enable the first button after 1500 milliseconds (1.5 seconds)
+            setTimeout(() => {
+                buttons[0].disabled = false;
+            }, 1500);
+        }
+
+        //await callGetSentFriendRequests();
+        //addFollowAndMessageButtons();
+        setSocialCounts("followers-count", "followings-count", "post-like-count", userId);
+    }
+
+    async function callCancelFriendRequest(userId) {
+        var result = await cancelFriendRequest(userId);
+        if (result) {
+            await reload(userId, false, false);
+        }
+    }
+
+    async function callRemoveFriend(friendId) {
+        var result = await removeFriend(friendId);
+        if (result) {
+            await reload(userId, false, false);
+        }
+    }
+
+    async function callSendFriendRequest(userId) {
+        var result = await sendFriendRequest(userId);
+        
+        if (result) {
+            await reload(userId, true, false);
+
+            await connection.invoke("SendFriendRequest", result.friendRequest);
+
+            //var notification = result;
+            console.log(result);
+            await connection.invoke("SendFriendRequestNotification", result.notification);
+        }
+    }
+
+    addFollowAndMessageButtons();
+
+    function getPosts() {
+        return new Promise(function (resolve, reject) {
+            $.ajax({
+                url: '/api/Post/GetAllPostsOfUser?userId=' + userId,
+                type: 'GET',
+                success: function (response) {
+                    resolve(response);
+                },
+                error: function (xhr, status, error) {
+                    reject(new Error(xhr.responseText));
+                }
+            });
+        });
+    }
+
+    function createPostHtml(post) {
+        var content = '';
+
+        if (post.hasMediaContent && !post.isVideo) {
+            content = `
+                                        <div class="image-post" style="display:flex; justify-content: center;">
+                                            <img src="${post.contentUrl}" alt="image" class="fit-image">
+                                        </div>
+                                    `;
+        }
+        else if (post.hasMediaContent && post.isVideo) {
+            content = `
+                                      <div class="post-video">
+                                           <video src="${post.contentUrl}" controls></video>
+                                      </div>
+                                    `;
+        }
+
+        var dateDiff = getDateTimeDifference(post.createdAt);
+
+        var html = `
+                                   <div class="news-feed news-feed-post" onclick="window.location.href = '/home/posts?id=${post.id}'" style="cursor: pointer;">
+                                        <div class="post-header d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <a href="/home/users?id=${post.userId}">
+                                                    <img src="${post.user.imageUrl}" alt="image" class="profile-image" style="max-height: 80px !important; max-width: 80px !important; border-radius: 50%;">
+                                                </a>
+                                            </div>
+                                            <div class="info ms-3">
+                                                <span class="name"><a href="/home/users?id=${post.userId}">${post.user.userName}</a></span>
+                                                <span class="small-text"><a>${dateDiff}</a></span>
+                                            </div>
+                                        </div>
+
+                                        <div class="post-body">
+                                            <p>${post.description}</p>
+                                            ${content}
+                                        </div>
+                                    </div>
+
+                                    <hr/>`;
+        return html;
+    }
+
+    var container = document.getElementById("posts-area");
+    async function addPostsToView() {
+        var posts = await getPosts();
+        if (posts != null && posts.length > 0) {
+            posts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).reverse();
+            var content = '';
+            for (var i = 0; i < posts.length; i++) {
+                var post = posts[i];
+                var html = createPostHtml(post);
+                content += html;
+            }
+            container.innerHTML = content;
+        }
+        else {
+            var noResult = getNoResultHtml("Oops! No posts found.", "User hasn't shared any posts yet!")
+            container.innerHTML = noResult;
+        }
+    }
+
+    connection.on("ReceiveFriendRequestResponse", async function(response){
+        await reload(response.id, response.hasFriendRequestPending, response.isFriend);
+    });
+
+    addPostsToView();
+</script>

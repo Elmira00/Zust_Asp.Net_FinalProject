@@ -1,0 +1,514 @@
+﻿@using Zust.Web.Helpers.ConstantHelpers
+@using Microsoft.AspNetCore.Identity;
+@using Zust.Entities.Models;
+@{
+    var userManager = Context.RequestServices.GetService<UserManager<User>>();
+    var user = await userManager.GetUserAsync(Context.User);
+    var TakeUserCount = Constants.TakeUserCount;
+    ViewData["Title"] = "Zust - Users";
+}
+
+<link rel="stylesheet" href="~/assets//css/main.css" />
+
+<style>
+    .user-image {
+        max-width: 100px !important;
+        max-height: 100px !important;
+        width: 100px !important;
+        height: 100px !important;
+        object-fit: cover !important;
+    }
+
+    .transparent-button {
+        background-color: transparent;
+        border: 1px solid transparent;
+    }
+
+    .single-friends-card:hover .red-icon {
+        background-color: var(--red-color) !important;
+        color: var(--white-color) !important;
+    }
+
+    .single-friends-card:hover .yellow-icon {
+        background-color: var(--yellow-color) !important;
+        color: var(--black-color) !important;
+    }
+
+    .single-friends-card:hover .main-icon {
+        background-color: var(--main-color) !important;
+        color: var(--white-color) !important;
+    }
+
+    .single-friends-card:hover .send-request-btn {
+        background-color: var(--main-color) !important;
+        color: var(--white-color) !important;
+        border: 1px solid var(--main-color) !important;
+    }
+
+    .single-friends-card:hover .remove-friend-btn {
+        background-color: var(--red-color) !important;
+        color: var(--white-color) !important;
+        border: 1px solid var(--red-color) !important;
+    }
+
+    .single-friends-card:hover .cancel-btn {
+        background-color: var(--yellow-color) !important;
+        color: var(--black-color) !important;
+        border: 1px solid var(--yellow-color) !important;
+    }
+
+    .search-box {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: end;
+    }
+
+        .search-box input {
+            border-radius: 10px;
+            border: 1px solid gray;
+        }
+
+    .custom-spinner-color {
+        color: var(--main-color);
+    }
+</style>
+
+
+
+<div class="page-banner-box bg-4">
+    <h3>Zust Users</h3>
+</div>
+
+<div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" role="tabpanel">
+        @*  <div class="search-box">
+        <form>
+        <input type="text" class="input-search" placeholder="Search">
+        <button type="submit"><i class="ri-search-line"></i></button>
+        </form>
+        </div>*@
+
+        <div class="friends-inner-box-style d-flex justify-content-between align-items-center margin-top-25">
+            <div class="friends-search-box" style="width: 100%;">
+                <div style="border: 1px solid gray; border-radius: 6px;">
+                    <input onkeydown="handleKeyPress(event)" id="searchText" type="text" class="input-search" placeholder="Search users...">
+                    <button onclick="searchUsers()"><i class="ri-search-line"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center" id="users">
+        </div>
+        <div class="load-more-posts-btn">
+            <button id="loadMore" class="transparent-button" onclick="LoadUsers()"><i class="flaticon-loading"></i> Load More</button>
+        </div>
+
+        <div class="load-more-posts-btn">
+            <button id="loadMoreSearchUsers" style="visibility: hidden;" class="transparent-button" onclick="LoadSearhResultUsers()"><i class="flaticon-loading"></i> Load More</button>
+        </div>
+    </div>
+</div>
+
+<script src="~/assets/js/jquery.min.js"></script>
+<script src="~/assets/js/functions.js"></script>
+<script>
+    localStorage.setItem('activeMenuItem', '#2');
+    var currentUserId = '@user.Id.ToString()';
+    var usersInView = [];
+    var takeUserCount = @TakeUserCount;
+    var container = document.getElementById("users");
+    var allUserCountInView = 0;
+    var searchResultUsers = [];
+    var searchResultUsersCountInView = 0;
+
+
+    function startSpinner() {
+        var spinner = `
+                                <div class="spinner-border custom-spinner-color" role="status">
+                                    <span class="sr-only"></span>
+                                </div>`;
+        $('#loadMore').prop('disabled', true);
+        $('#loadMore').html(spinner);
+    }
+
+    function stopSpinner() {
+        $('#loadMore').prop('disabled', false);
+        $('#loadMore').html('<i class="flaticon-loading"></i> Load More');
+    }
+
+    function handleKeyPress(event) {
+        if (event.keyCode === 13) { // 13 corresponds to the Enter key
+            event.preventDefault(); // Prevent the default form submission behavior
+            searchUsers();
+        }
+    }
+
+    function hideLoadMore() {
+        document.querySelector(".load-more-posts-btn").style.display = "none";
+    }
+
+    function searchUsers() {
+        hideLoadMore();
+        var searchText = document.getElementById("searchText").value.trim();
+        if (searchText == '') return;
+        GetUsersByText(searchText);
+    }
+
+    function GetUsersByText(text) {
+        $.ajax({
+            url: '/api/User/GetUsersByText/' + text,
+            method: 'GET',
+            success: async function (data) {
+                if (data.length === 0){
+                    var html = getNoResultHtml("No Users Found", "Sorry, we couldn't find any users matching your search criteria.");
+                    container.innerHTML = html;
+                    document.getElementById("loadMoreSearchUsers").style.visibility = "hidden";
+                }
+                else{
+                    allUserCountInView = data.length;
+                    container.innerHTML = '';
+                    console.log(data);
+                    searchResultUsers = data;
+                    searchResultUsersCountInView = 0;
+                    document.getElementById("loadMoreSearchUsers").style.visibility = "visible";
+                    //alert(document.getElementById("loadMoreSearchUsers").style.visibility);
+                    document.getElementById("loadMore").style.display = "none";
+                    //await ShowUsersAsync(data, true);
+                    LoadSearhResultUsers();
+                }
+            },
+            error: function (error) {
+                alert("Error occurred: " + error.responseText);
+            }
+        });
+    }
+
+    var sentFriendRequests = [];
+
+    async function callGetSentFriendRequests() {
+        try {
+            sentFriendRequests = await getSentFriendRequests(currentUserId);
+        } catch (error) {
+            alert("Error occurred: " + error.responseText);
+        }
+    }
+
+    //callGetSentFriendRequests();
+
+    async function LoadUsers() {
+        startSpinner();
+        await GetUsersAsync();
+    }
+
+    function GetAllUsersCount() {
+        return new Promise(function (resolve, reject) {
+            $.ajax({
+                url: '/api/User/GetAllUsersCount',
+                method: 'GET',
+                success: function (data) {
+                    resolve(data);
+                },
+                error: function (error) {
+                    alert("Error occurred: " + error.responseText);
+                }
+            });
+        });
+    }
+
+    function GetUsersAsync() {
+        $.ajax({
+            url: '/api/User/GetUsers',
+            method: 'GET',
+            data: {
+                startIndex: allUserCountInView,
+                userCount: takeUserCount
+            },
+            success: async function (data) {
+                allUserCountInView += data.length;
+                //usersInView.push(...data);
+                console.log(data);
+                await ShowUsersAsync(data);
+            },
+            error: function (error) {
+                alert("Error occurred: " + error.responseText);
+            }
+        });
+    }
+
+    async function LoadSearhResultUsers(){
+        searchResultUsersCountInView = 0;
+        var spinner = `
+                                    <div class="spinner-border custom-spinner-color" role="status">
+                                        <span class="sr-only"></span>
+                                    </div>`;
+        $('#loadMoreSearchUsers').prop('disabled', true);
+        $('#loadMoreSearchUsers').html(spinner);
+        //alert($('#loadMoreSearchUsers').html());
+        //alert(searchResultUsersCountInView);
+        var items = searchResultUsers.splice(searchResultUsersCountInView, takeUserCount);
+        createUserHtml(items);
+        //alert(items.length);
+        searchResultUsersCountInView += items.length
+        console.log(searchResultUsers);
+        var allUsersCount = searchResultUsers.length
+        //alert(searchResultUsersCountInView);
+        //alert(allUsersCount);
+        await setSocialData(items);
+        if (searchResultUsersCountInView === allUsersCount) { // Current User Subtracted
+            //alert("HIDE");
+            document.getElementById("loadMoreSearchUsers").style.display = "none";
+        }else{
+            $('#loadMoreSearchUsers').prop('disabled', false);
+            $('#loadMoreSearchUsers').html('<i class="flaticon-loading"></i> Load More');
+        }
+    }
+
+    function createUserHtml(newUsers) {
+        for (var i = 0; i < newUsers.length; i++) {
+            var user = newUsers[i];
+            //var btnContent = getButtonHtml(user);
+            var iconClass = getIconClass(user);
+            var spinnerHtml = `
+                                <div class="spinner-border text-primary" role="status" style="color:var(--main-color) !important; width:1.1rem; height:1.1rem; ">
+                                    <span class="sr-only"></span>
+                                </div>
+                            `;
+
+            var postLikeCountId = `post-like-count-${user.id}`;
+            var followingCountId = `following-${user.id}`;
+            var followerCountId = `follower-${user.id}`;
+
+            var subContent = `
+                            <div class="col-lg-3 col-sm-6">
+                                <div class="single-friends-card">
+                                    <div class="friends-image">
+                                        <a href="/home/users?id=${user.id}">
+                                            <img src="${user.coverImage}" alt="${user.normalizedUserName}">
+                                        </a>
+                                        <div class="icon">
+                                                <a href="/home/users?id=${user.id}"><i id="icon-${user.id}" class="flaticon-user ${iconClass}"></i></a>
+                                        </div>
+                                    </div>
+                                    <div class="friends-content">
+                                        <div class="friends-info d-flex justify-content-between align-items-center">
+                                            <a href="/home/users?id=${user.id}">
+                                                    <img src="${user.imageUrl}" alt="${user.username}" class="user-image">
+                                            </a>
+                                            <div class="text ms-3">
+                                                <h3>${user.userName}</h3>
+                                                <span>${truncateText(user.email, 15)}</span>
+                                            </div>
+                                        </div>
+                                        <ul class="statistics">
+                                            <li>
+                                                <a>
+                                                    <span class="item-number" id='${postLikeCountId}'>${spinnerHtml}</span>
+                                                    <span class="item-text">Likes</span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a>
+                                                    <span class="item-number" id='${followingCountId}'>${spinnerHtml}</span>
+                                                    <span class="item-text">Following</span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a>
+                                                    <span class="item-number" id='${followerCountId}'>${spinnerHtml}</span>
+                                                    <span class="item-text">Followers</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>`;
+
+            //<div class="button-group d-flex justify-content-between align-items-center" >
+            //    <div class="row add-friend-btn w-100" id = "btn-container-${user.id}" >
+            //        ${ btnContent }
+            //</div>
+            //    < /div>
+
+            container.innerHTML += subContent;
+        }
+    }
+
+    async function ShowUsersAsync(newUsers, isSearchResult = false) {
+        if (isSearchResult) {
+            LoadSearhResultUsers();
+        }
+        else {
+            //console.log('USERS');
+            //console.log(newUsers);
+            if (newUsers.length === 0) {
+                container.innerHTML = getNoResultHtml("No https://res.cloudinary.com/du4jozmsw/image/upload/v1728493014/Zust/Advertisements/txpw38uku0w6fzsnedq4.jpg found", "Sorry! We couldn't find any https://res.cloudinary.com/du4jozmsw/image/upload/v1728493014/Zust/Advertisements/txpw38uku0w6fzsnedq4.jpg.");
+            }
+            else {
+                //if (sentFriendRequests.length === 0) {
+                //    //alert("GOT REQUESTS");
+                //    sentFriendRequests = await getSentFriendRequests(currentUserId);
+                //    //alert(sentFriendRequests);
+                //}
+                var allUsersCount = await GetAllUsersCount();
+                if (allUserCountInView == allUsersCount - 1) { // Current User Subtracted
+                    document.querySelector(".load-more-posts-btn").style.display = "none";
+                }
+
+                createUserHtml(newUsers);
+
+                //container.innerHTML = '';
+               
+
+                //document.getElementById("loadMore").remove();
+                await setSocialData(newUsers);
+                stopSpinner();
+
+                //if (canCall){
+                //setSocialData(newUsers);
+                //}
+                //else{
+                //    while(!canCall){
+                //        await new Promise((resolve) => setTimeout(resolve, 500)); // Adjust the delay as needed
+                //    }
+                //    setSocialData(newUsers);
+                //}
+
+                //fix();
+            }
+        }
+    }
+
+    //async function fix(){
+    //      for (var i = 0; i < usersInView.length; i++) {
+    //            var user = usersInView[i];
+
+    //            var postLikeCountId = `post-like-count-${user.id}`;
+    //            var followingCountId = `following-${user.id}`;
+    //            var followerCountId = `follower-${user.id}`;
+
+    //            var postLikeElement = document.getElementById(postLikeCountId);
+    //            var followingElement = document.getElementById(followingCountId);
+    //            var followerElement = document.getElementById(followerCountId);
+
+    //            var spinnerHtml = `
+    //                <div class="spinner-border text-primary" role="status" style="color:var(--main-color) !important; width:1.1rem; height:1.1rem; ">
+    //                    <span class="sr-only"></span>
+    //                </div>
+    //            `;
+
+    //            if (postLikeElement.innerHTML === spinnerHtml){
+    //                const postLikeCount = await getAllPostLikeCount(currentUserId);
+    //                postLikeElement.innerHTML = postLikeCount;
+    //            }
+    //            if (followingElement.innerHTML === spinnerHtml){
+    //                const followingCount = await getAllFollowingsCount(currentUserId);
+    //                followingElement.innerHTML = followingCount;
+    //            }
+    //            if (followerElement.innerHTML === spinnerHtml){
+    //                const followerCount = await getAllFollowersCount(currentUserId);
+    //                followerElement.innerHTML = followerCount;
+    //            }
+    //      }
+    //}
+
+    async function setSocialData(newUsers) {
+        await Promise.all(
+            newUsers.map(async (user) => {
+                var postLikeCountId = `post-like-count-${user.id}`;
+                var followingCountId = `following-${user.id}`;
+                var followerCountId = `follower-${user.id}`;
+                await setSocialCounts(followerCountId, followingCountId, postLikeCountId, user.id);
+            })
+        );
+    }
+
+    function truncateText(text, maxLength) {
+        if (text.length > maxLength) {
+            return text.substring(0, maxLength) + "...";
+        } else {
+            return text;
+        }
+    }
+
+    var waitingSpinner = `
+                <div class="spinner-border text-primary" role="status" style="color:var(--black-color) !important; width:0.85rem; height:0.85rem; ">
+                    <span class="sr-only"></span>
+                </div>
+            `;
+
+    function changeView(user) {
+        var btnContainer = document.getElementById(`btn-container-${user.id}`);
+        var btnhtml = getButtonHtml(user);
+        console.log(btnhtml);
+        btnContainer.innerHTML = btnhtml;
+
+        var icon = document.getElementById(`icon-${user.id}`);
+        icon.classList = getIconClass(user);
+
+        const buttons = btnContainer.querySelectorAll(".btn");
+        if (buttons.length > 0) {
+            // Disable the first button
+            buttons[0].disabled = true;
+            var innerHtml = buttons[0].innerHTML;
+            buttons[0].innerHTML = waitingSpinner;
+
+            // Enable the first button after 1500 milliseconds (1.5 seconds)
+            setTimeout(() => {
+                buttons[0].disabled = false;
+                buttons[0].innerHTML = innerHtml;
+            }, 1500);
+        }
+    }
+
+    async function callCancelFriendRequest(userId) {
+        var result = await cancelFriendRequest(userId);
+        if (result) {
+            var user = {
+                id: userId,
+                hasFriendRequestPending: false,
+                isFriend: false
+            };
+            changeView(user);
+            //await callGetSentFriendRequests();
+            //await ShowUsersAsync();
+        }
+    }
+
+    async function callRemoveFriend(friendId) {
+        var result = await removeFriend(friendId);
+        if (result) {
+            var user = {
+                id: friendId,
+                hasFriendRequestPending: false,
+                isFriend: false
+            };
+            console.log(user);
+            changeView(user);
+
+            var followerCountId = `follower-${user.id}`;
+            var el = document.getElementById(followerCountId);
+            var n = Number(el.innerHTML);
+            el.innerHTML = n - 1;
+            //await callGetSentFriendRequests();
+            //await ShowUsersAsync();
+        }
+    }
+
+    async function callSendFriendRequest(userId) {
+        var result = await sendFriendRequest(userId);
+        if (result) {
+            var user = {
+                id: userId,
+                hasFriendRequestPending: true,
+                isFriend: false
+            };
+            changeView(user);
+            //await callGetSentFriendRequests();
+            //await ShowUsersAsync();
+        }
+    }
+
+    startSpinner();
+    LoadUsers();
+</script>
